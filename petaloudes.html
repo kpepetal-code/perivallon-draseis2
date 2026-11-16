@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Η κοιλάδα των Πεταλούδων</title>
+<style>
+:root{--bg:#e6f6dc;--card:#fff;--ink:#1d3b2a;--acc:#f28c1b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14261b;--card:#213d2c;--ink:#f1f8ee}}
+:root[data-theme="dark"]{--bg:#14261b;--card:#213d2c;--ink:#f1f8ee}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;text-align:center;padding:12px}
+.wrap{max-width:620px;margin:0 auto}
+h1{font-size:1.5rem;margin:6px 0}
+#prog{display:flex;gap:6px;justify-content:center;margin:8px 0}
+#prog span{width:46px;height:12px;border-radius:8px;background:rgba(0,0,0,.18)}
+#prog span.on{background:var(--acc)}#prog span.done{background:#2e9e4f}
+h2{font-size:1.25rem;margin:8px 0}
+#msg{min-height:3.4em;font-size:1.1rem;font-weight:bold;margin:6px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.card,.opt{background:var(--card);color:var(--ink);border:4px solid transparent;border-radius:18px;padding:10px 6px;font:inherit;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.card .e{display:block;font-size:3rem;line-height:1.2}
+.card .n{display:block;font-size:.9rem;font-weight:bold}
+.card.ok{border-color:#2e9e4f;background:#d8f5de;color:#13361f}
+.card.step{border-color:#2e9e4f;background:#d8f5de;color:#13361f}
+.card.shake{animation:sh .4s}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.num{display:inline-block;background:#2e9e4f;color:#fff;border-radius:50%;width:26px;height:26px;line-height:26px;font-weight:bold}
+.q{font-size:1.2rem;font-weight:bold;margin:10px 0}
+.opt{display:block;width:100%;margin:8px 0;font-size:1.1rem;font-weight:bold}
+.opt.ok{border-color:#2e9e4f;background:#d8f5de;color:#13361f}
+.opt.bad{border-color:#e0503c;background:#fde1dc;color:#4a1008}
+.btn{margin-top:14px;font:inherit;font-size:1.15rem;font-weight:bold;padding:12px 24px;border:0;border-radius:30px;background:#f5b800;color:#2b2200;cursor:pointer}
+.big{font-size:2.4rem;margin:8px 0}
+.fact{background:var(--card);border-radius:16px;padding:10px 12px;margin-top:12px;font-size:.95rem;text-align:left}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🦋 Η κοιλάδα των Πεταλούδων, Ρόδος</h1>
+<div id="prog"></div>
+<h2 id="title"></h2>
+<div id="msg" aria-live="polite"></div>
+<div id="main"></div>
+<div id="nav"></div>
+<div class="fact">🌳 Στην κοιλάδα Πεταλούδες της Ρόδου μαζεύονται το καλοκαίρι χιλιάδες «πεταλούδες». Είναι στην πραγματικότητα νυχτοπεταλούδες, και τις τραβά η μυρωδιά βανίλιας από τη ρητίνη της ζιτιάς.</div>
+</div>
+<script>
+var $=function(i){return document.getElementById(i)};
+var st=0,miss=0,found,seq,nextN,qi,locked;
+var ANIMALS=[["🦋","Νυχτοπεταλούδα της Ρόδου",1],["🐟","Ψάρι του ποταμού",1],["🐦","Πουλιά",1],["🐧","Πιγκουίνος",0],["🦁","Λιοντάρι",0],["🐘","Ελέφαντας",0],["🐻‍❄️","Πολική αρκούδα",0],["🦒","Καμηλοπάρδαλη",0]];
+var CYCLE=[["🥚","Αυγό"],["🐛","Κάμπια"],["🟤","Χρυσαλλίδα"],["🦋","Πεταλούδα"]];
+var QUIZ=[
+{q:"Ποιο δέντρο μυρίζει βανίλια και τραβά τις πεταλούδες;",o:["Ελιά","Ζιτιά","Πεύκο"],a:1,w:"Η ζιτιά έχει ρητίνη με μυρωδιά βανίλιας."},
+{q:"Τι χρώμα έχουν τα πίσω φτερά όταν πετά;",o:["Μπλε","Πορτοκαλοκόκκινο","Πράσινο"],a:1,w:"Έχουν και μαύρες βούλες!"},
+{q:"Πότε μαζεύονται στην κοιλάδα;",o:["Το καλοκαίρι","Τον χειμώνα","Μόνο τα Χριστούγεννα"],a:0,w:"Από τον Μάιο ή Ιούνιο μέχρι τον Σεπτέμβριο."},
+{q:"Η «πεταλούδα» της Ρόδου στην πραγματικότητα είναι…",o:["Μέλισσα","Νυχτοπεταλούδα","Μύγα"],a:1,w:"Ονομάζεται και σκώρος και πετά και την ημέρα."}];
+var RULES=[
+{q:"Φωνάζω και χτυπώ παλαμάκια για να πετάξουν οι πεταλούδες.",o:["👍 Σωστό","👎 Λάθος"],a:1,w:"Ξεκουράζονται! Η φασαρία τις ξυπνά και τις ενοχλεί."},
+{q:"Περπατώ στο μονοπάτι και στα ξύλινα γεφυράκια.",o:["👍 Σωστό","👎 Λάθος"],a:0,w:"Έτσι προστατεύουμε τη φύση γύρω μας."},
+{q:"Ακουμπώ τις πεταλούδες για να τις πιάσω.",o:["👍 Σωστό","👎 Λάθος"],a:1,w:"Τις κοιτάμε χωρίς να τις αγγίζουμε."},
+{q:"Μιλάω σιγά και χαζεύω τα δέντρα.",o:["👍 Σωστό","👎 Λάθος"],a:0,w:"Η ησυχία είναι ο κανόνας της κοιλάδας."}];
+var T=["Σταθμός 1: Ποιος ζει στην κοιλάδα;","Σταθμός 2: Ο κύκλος της ζωής","Σταθμός 3: Κουίζ της πεταλούδας","Σταθμός 4: Κανόνες επίσκεψης"];
+function prog(){var h="";for(var i=0;i<4;i++)h+='<span class="'+(i<st?"done":(i===st?"on":""))+'"></span>';$("prog").innerHTML=h}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function shake(b){b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake")}
+function nextBtn(){$("nav").innerHTML='<button class="btn" id="nx">Επόμενος σταθμός ➡️</button>';$("nx").onclick=function(){st++;go()}}
+function go(){
+  prog();$("nav").innerHTML="";$("main").innerHTML="";
+  if(st>3){end();return}
+  $("title").textContent=T[st];
+  if(st===0)s1();else if(st===1)s2();else quiz(st===2?QUIZ:RULES);
+}
+function s1(){
+  found=0;$("msg").textContent="Πάτα τα 3 ζώα που ζουν στην κοιλάδα της Ρόδου. 👆";
+  var m=$("main");m.className="grid";
+  shuffle(ANIMALS.slice()).forEach(function(a){
+    var b=document.createElement("button");b.className="card";
+    b.innerHTML='<span class="e">'+a[0]+'</span><span class="n">'+a[1]+'</span>';
+    b.onclick=function(){
+      if(b.classList.contains("ok"))return;
+      if(a[2]){b.classList.add("ok");found++;
+        $("msg").textContent="🎉 Σωστά! Βρήκες: "+found+" από 3.";
+        if(found===3){$("msg").textContent="🎉 Μπράβο! Αυτά ζουν στην κοιλάδα: πεταλούδες, ψάρια στο ποτάμι και πουλιά.";nextBtn()}
+      }else{miss++;shake(b);$("msg").textContent="😮 Ωχ! Αυτό το ζώο δεν ζει εκεί. Δοκίμασε άλλο."}
+    };
+    m.appendChild(b);
+  });
+}
+function s2(){
+  nextN=0;$("msg").textContent="Πάτα τα στάδια με τη σειρά, από την αρχή της ζωής. Ποιο πρώτο; 👆";
+  var m=$("main");m.className="grid";
+  shuffle(CYCLE.map(function(c,i){return [c[0],c[1],i]})).forEach(function(c){
+    var b=document.createElement("button");b.className="card";
+    b.innerHTML='<span class="e">'+c[0]+'</span><span class="n">'+c[1]+'</span>';
+    b.onclick=function(){
+      if(b.classList.contains("step"))return;
+      if(c[2]===nextN){nextN++;b.classList.add("step");
+        b.innerHTML+='<span class="num">'+nextN+'</span>';
+        if(nextN===4){$("msg").textContent="🎉 Μπράβο! Από αυγό γίνεται κάμπια, μετά χρυσαλλίδα και τέλος πεταλούδα.";nextBtn()}
+        else $("msg").textContent="✅ Σωστά! Τι έρχεται μετά;";
+      }else{miss++;shake(b);$("msg").textContent="😮 Όχι ακόμα! Σκέψου τι έρχεται πρώτο."}
+    };
+    m.appendChild(b);
+  });
+}
+function quiz(set){
+  qi=0;locked=false;$("main").className="";showQ(set);
+}
+function showQ(set){
+  var x=set[qi];locked=false;$("nav").innerHTML="";
+  $("msg").textContent="Ερώτηση "+(qi+1)+" από "+set.length;
+  var h='<div class="q">'+x.q+'</div>';
+  x.o.forEach(function(o,i){h+='<button class="opt" data-i="'+i+'">'+o+'</button>'});
+  $("main").innerHTML=h;
+  document.querySelectorAll(".opt").forEach(function(b){
+    b.onclick=function(){
+      if(locked)return;
+      if(+b.dataset.i===x.a){
+        locked=true;b.classList.add("ok");$("msg").textContent="🎉 Σωστά! "+x.w;
+        if(qi<set.length-1){$("nav").innerHTML='<button class="btn" id="nq">Επόμενη ➡️</button>';$("nq").onclick=function(){qi++;showQ(set)}}
+        else if(st<3){nextBtn()}else{$("nav").innerHTML='<button class="btn" id="fin">Τέλος! 🏆</button>';$("fin").onclick=function(){st++;go()}}
+      }else{miss++;b.classList.add("bad");shake(b);$("msg").textContent="😮 Δοκίμασε ξανά!"}
+    };
+  });
+}
+function end(){
+  $("title").textContent="🏆 Μπράβο, φύλακας της κοιλάδας!";
+  var s=miss<=2?3:(miss<=6?2:1),t="";for(var i=0;i<3;i++)t+=i<s?"🌟":"☆";
+  $("msg").textContent="Έμαθες πώς προστατεύουμε τις πεταλούδες της Ρόδου.";
+  $("main").innerHTML='<div class="big">'+t+'</div><div>Λάθη: '+miss+'</div>';
+  $("nav").innerHTML='<button class="btn" id="re">🔄 Παίξε ξανά</button>';
+  $("re").onclick=function(){st=0;miss=0;go()};
+}
+go();
+</script>
+</body>
+</html>

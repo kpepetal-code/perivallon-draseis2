@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ανακυκλώνω σωστά!</title>
+<style>
+:root{--bg:#e8f7e4;--card:#fff;--ink:#1d3b2a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14261b;--card:#213d2c;--ink:#f1f8ee}}
+:root[data-theme="dark"]{--bg:#14261b;--card:#213d2c;--ink:#f1f8ee}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;text-align:center;padding:12px}
+h1{font-size:1.6rem;margin:6px 0}
+.sub{margin:0 0 10px;font-size:1.05rem}
+#top{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.lv,#snd{font:inherit;font-weight:bold;border:3px solid transparent;border-radius:24px;padding:8px 14px;background:var(--card);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.lv.on{border-color:#f5b800;background:#fff3c4;color:#2b2200}
+#msg{min-height:3.2em;font-size:1.2rem;font-weight:bold;margin:8px auto;max-width:560px}
+#score{font-size:1.2rem;margin-bottom:6px}
+#items{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;max-width:640px;margin:0 auto 14px}
+.item{background:var(--card);border:4px solid transparent;border-radius:18px;padding:8px 4px;font:inherit;color:inherit;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.item .e{display:block;font-size:2.8rem;line-height:1.2}
+.item .n{display:block;font-size:.85rem;font-weight:bold}
+.item.sel{border-color:#f5b800;transform:scale(1.08)}
+.item.gone{visibility:hidden}
+.item.shake{animation:sh .4s}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes pu{50%{transform:scale(1.07);outline:5px solid #fff}}
+#bins{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:560px;margin:0 auto}
+.bin{border:0;border-radius:16px 16px 22px 22px;padding:10px 6px 14px;color:#fff;font:inherit;font-weight:bold;font-size:1.05rem;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+.bin:before{content:"";display:block;height:10px;background:rgba(0,0,0,.25);border-radius:6px;margin:-4px -4px 8px}
+.bin .e{display:block;font-size:2.4rem}
+.bin small{display:block;font-weight:normal;font-size:.8rem}
+.bin.pulse{animation:pu .7s 2}
+.bin:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.b-paper{background:#2d7ff0}.b-plastic{background:#e0a400;color:#2b2200}.b-glass{background:#2e9e4f}.b-bio{background:#8a5a33}.b-special{background:#d9372b;grid-column:1/-1}
+button.again{margin-top:14px;font:inherit;font-size:1.2rem;font-weight:bold;padding:12px 24px;border:0;border-radius:30px;background:#f5b800;color:#2b2200;cursor:pointer}
+.big{font-size:2.2rem;margin-top:10px}
+.hint{font-size:.95rem;margin-top:14px;opacity:.85}
+</style>
+</head>
+<body>
+<h1>♻️ Ανακυκλώνω σωστά!</h1>
+<p class="sub">Πάτα ένα αντικείμενο και μετά τον σωστό κάδο.</p>
+<div id="top"></div>
+<div id="score"></div>
+<div id="msg" aria-live="polite"></div>
+<div id="items"></div>
+<div id="bins"></div>
+<div id="end"></div>
+<p class="hint">Ανακυκλώνοντας προστατεύουμε τη φύση και τη θάλασσα μας. 🌍🐢</p>
+<script>
+var BINS={
+paper:["📚","Χαρτί","Μπλε κάδος"],
+plastic:["🧴","Πλαστικό & Μέταλλο","Κίτρινος κάδος"],
+glass:["🍾","Γυαλί","Πράσινος κάδος"],
+bio:["🌱","Οργανικά","Καφέ κάδος"],
+special:["⚠️","Μπαταρίες & Ηλεκτρικά","Ειδικό σημείο συλλογής (κόκκινος κάδος)"]};
+var DATA=[
+["📰","Εφημερίδα","paper"],["📦","Χαρτόνι","paper"],["📄","Φύλλο χαρτί","paper"],
+["🧴","Μπουκάλι νερού","plastic"],["🛍️","Πλαστική σακούλα","plastic"],["🥫","Κονσέρβα","plastic"],
+["🍾","Γυάλινο μπουκάλι","glass"],["🫙","Γυάλινο βάζο","glass"],
+["🍌","Φλούδα μπανάνας","bio"],["🍎","Μήλο που έμεινε","bio"],["🍂","Ξερά φύλλα","bio"],["🥚","Τσόφλι αυγού","bio"],
+["🔋","Μπαταρία","special"],["📱","Παλιό κινητό","special"],["💡","Λαμπτήρας","special"],["🔌","Φορτιστής","special"]];
+var EASY=["📰","📦","🧴","🥫","🍾","🫙","🍌","🍎"];
+var LV=[
+{t:"⭐ Εύκολο",bins:["paper","plastic","glass","bio"],f:function(d){return EASY.indexOf(d[0])>-1},hint:true},
+{t:"⭐⭐ Μεσαίο",bins:["paper","plastic","glass","bio"],f:function(d){return d[2]!=="special"},hint:false},
+{t:"⭐⭐⭐ Δύσκολο",bins:["paper","plastic","glass","bio","special"],f:function(){return true},hint:false}];
+var lv=0,sel=null,score=0,total=0,miss=0,mute=false,ctx=null;
+var $=function(id){return document.getElementById(id)};
+function tone(seq){
+  if(mute)return;
+  try{
+    ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+    var t=ctx.currentTime;
+    seq.forEach(function(n,i){
+      var o=ctx.createOscillator(),g=ctx.createGain();
+      o.type=n[2]||"sine";o.frequency.value=n[0];
+      g.gain.setValueAtTime(.15,t+i*.14);g.gain.exponentialRampToValueAtTime(.001,t+i*.14+n[1]);
+      o.connect(g);g.connect(ctx.destination);o.start(t+i*.14);o.stop(t+i*.14+n[1]+.02);
+    });
+  }catch(e){}
+}
+var OK=[[660,.15],[880,.25]],BAD=[[200,.3,"sawtooth"]],WIN=[[523,.2],[659,.2],[784,.2],[1047,.5]];
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function drawTop(){
+  var h="";
+  LV.forEach(function(l,i){h+='<button class="lv'+(i===lv?' on':'')+'" data-i="'+i+'">'+l.t+'</button>'});
+  h+='<button id="snd" aria-label="Ήχος">'+(mute?"🔇":"🔊")+'</button>';
+  $("top").innerHTML=h;
+  document.querySelectorAll(".lv").forEach(function(b){b.onclick=function(){lv=+b.dataset.i;start()}});
+  $("snd").onclick=function(){mute=!mute;drawTop()};
+}
+function drawBins(){
+  var h="";
+  LV[lv].bins.forEach(function(k){
+    var b=BINS[k];
+    h+='<button class="bin b-'+k+'" data-b="'+k+'"><span class="e">'+b[0]+'</span>'+b[1]+'<small>'+b[2]+'</small></button>';
+  });
+  $("bins").innerHTML=h;
+  document.querySelectorAll(".bin").forEach(function(bin){bin.onclick=function(){pick(bin)}});
+}
+function start(){
+  var L=LV[lv],list=DATA.filter(L.f);
+  sel=null;score=0;miss=0;total=list.length;
+  drawTop();drawBins();
+  $("end").innerHTML="";$("msg").textContent="Διάλεξε ένα αντικείμενο! 👆";
+  var box=$("items");box.innerHTML="";
+  shuffle(list).forEach(function(d){
+    var b=document.createElement("button");b.className="item";
+    b.innerHTML='<span class="e">'+d[0]+'</span><span class="n">'+d[1]+'</span>';
+    b.dataset.bin=d[2];b.dataset.name=d[1];
+    b.onclick=function(){
+      if(sel)sel.classList.remove("sel");
+      sel=b;b.classList.add("sel");
+      $("msg").textContent="Πού πάει: "+d[1]+";";
+    };
+    box.appendChild(b);
+  });
+  upd();
+}
+function upd(){$("score").textContent="⭐ Σωστά: "+score+" / "+total}
+function pick(bin){
+  if(!sel){$("msg").textContent="Πρώτα διάλεξε ένα αντικείμενο! 👆";return}
+  var it=sel,k=bin.dataset.b;
+  if(it.dataset.bin===k){
+    it.classList.remove("sel");it.classList.add("gone");it.disabled=true;
+    sel=null;score++;upd();
+    $("msg").textContent="🎉 Μπράβο! Το "+it.dataset.name.toLowerCase()+" πάει στον κάδο: "+BINS[k][1]+".";
+    if(score===total){finish()}else{tone(OK)}
+  }else{
+    miss++;tone(BAD);
+    it.classList.remove("shake");void it.offsetWidth;it.classList.add("shake");
+    var right=BINS[it.dataset.bin];
+    if(LV[lv].hint){
+      $("msg").textContent="😮 Ωχ! Δες τον κάδο που αναβοσβήνει. Δοκίμασε εκεί!";
+      var rb=document.querySelector('.bin[data-b="'+it.dataset.bin+'"]');
+      rb.classList.remove("pulse");void rb.offsetWidth;rb.classList.add("pulse");
+    }else{
+      $("msg").textContent="😮 Ωχ! Δοκίμασε ξανά. Δεν πάει εδώ.";
+    }
+  }
+}
+function finish(){
+  var s=miss<=2?3:(miss<=5?2:1);
+  tone(WIN);
+  $("msg").textContent="🏆 Τα κατάφερες! Είσαι ήρωας της ανακύκλωσης!";
+  var st="";for(var i=0;i<3;i++)st+=i<s?"🌟":"☆";
+  $("end").innerHTML='<div class="big">'+st+'</div><div>Λάθη: '+miss+'</div><button class="again" id="ag">🔄 Παίξε ξανά</button>'+(lv<2?' <button class="again" id="nx">➡️ Επόμενο επίπεδο</button>':'');
+  $("ag").onclick=start;
+  if($("nx"))$("nx").onclick=function(){lv++;start()};
+}
+start();
+</script>
+</body>
+</html>
